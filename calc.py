@@ -3,7 +3,6 @@ import os
 import re
 import subprocess
 import sys
-from curses.ascii import NUL
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -24,16 +23,23 @@ def removeCountToMap(word, my_dict_white):
     if (word in my_dict_white):
         if (my_dict_white[word] >= 0):
             conflict.add(word)
-            my_dict_white[word] = NUL
+            my_dict_white[word] = 0
 
 
-def mapToTxt(map, file):
+def mapToTxt(map, file, search):
     os.makedirs(os.path.dirname(file), exist_ok=True)
     with open(file, 'w') as file:
         if isinstance(map, dict):
-            sort = sorted(map.items(), key=lambda x: x[1])
+            sort = sorted(map.items(), key=lambda x: x[1],  reverse=True)
             for k in sort:
-                file.write("%s, %s\n" % (k[0], k[1]))
+                word = k[0]
+                if search == True:
+                    wordrange = (0, len(word))
+                    s = subprocess.check_output(["./dict", word]).decode("utf-8")
+                    print(s)
+                    file.write("%s, %s\n" % (word, s))
+                else:
+                    file.write("%s, %s\n" % (word, k[1]))
         else:
             for k in map:
                 file.write("%s\n" % (k))
@@ -117,7 +123,6 @@ def removeInflection(invertedIndex):
             disjoint.discard(key)
     return disjoint
 
-
 print('-----------------------------------------------')
 print('======== All vocabulary list for now  =========')
 print('-----------------------------------------------')
@@ -135,7 +140,7 @@ my_dict_unexplorered = {}
 s = 'iconv -f utf-8 -t utf-8 -c ' + book + '''| tr "[:upper:]" "[:lower:]" \
   | perl -CS -p -e 's/[\p{Han}]/ /g' \
   | perl -CS -p -e 's/[[:punct:]]/ /g' \
-  | sed 's/[[～＝＋×∗►　	]/ /g' \
+  | sed 's/[[～＝＋×∗►　	]/ /g' \
   | sed -r 's/[^[:space:]]*[0-9][^[:space:]]* ?//g' \
   | sed -r 's/[^[:space:]]*[A|B|C|D][^[:space:]]* ?//g' \
   | tr ' ' '\n' \
@@ -176,14 +181,14 @@ print('white     \t' + str(len(my_dict_white))
 print('-----------------------------------------------')
 print('all       \t' + str(all))
 
-mapToTxt(conflict, 'out/conflict.csv')
+mapToTxt(conflict, 'out/conflict.csv', False)
 
 # 输出当前整理的词频
-mapToTxt(whiteList, 'out/whiteList.csv')
-mapToTxt(blackList, 'out/blackList.csv')
+mapToTxt(whiteList, 'out/whiteList.csv', False)
+mapToTxt(blackList, 'out/blackList.csv', False)
 
 # 输出不认识的单词与频率
-out = book.rsplit(".", 1)[0]
-mapToTxt(my_dict_unexplorered, 'out/' + out + '/unknown.csv')
-mapToTxt(my_dict_black, 'out/' + out + '/black.csv')
-mapToTxt(my_dict_white, 'out/' + out + '/white.csv')
+out = re.sub(r'\s+', '', os.path.basename(book))
+mapToTxt(my_dict_unexplorered, 'out/' + out + '/unknown.csv', False)
+mapToTxt(my_dict_black, 'out/' + out + '/black.csv', False)
+mapToTxt(my_dict_white, 'out/' + out + '/white.csv', False)

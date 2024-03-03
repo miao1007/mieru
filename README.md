@@ -4,6 +4,8 @@ A simple script which can parse plain text into vocabulary frequency usage.
 
 (WIP)
 
+for now it only works on Mac OS.
+
 ## Usage
 
 ```sh
